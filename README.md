@@ -1,73 +1,88 @@
-# React + TypeScript + Vite
+# Pendu Dev Portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based internal development portal for tracking Pendu product progress, roadmap phases, bug history, and Phase 2 execution planning.
 
-Currently, two official plugins are available:
+This app replaces the older static HTML dev portal with a shareable, deployable interface designed for continuous updates and external review.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Purpose
 
-## React Compiler
+The portal exists to make project state readable at a glance.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+It is used to show:
 
-## Expanding the ESLint configuration
+- current product progress
+- shipped and planned roadmap layers
+- bug history in a more readable format
+- recent implementation work
+- Phase 2 backend execution order
+- project metadata and technical stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The goal is not just visualization. The portal is intended to be a live operational view of the product’s implementation state.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Why This Exists
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The previous version of the portal was built as a static HTML page inside the main mobile repo.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+That version worked as a quick reference, but it had several limitations:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- hard to share externally
+- difficult to evolve cleanly
+- bug logs were not easy to scan
+- roadmap and future tasks were too dense
+- no proper deploy flow for regular progress updates
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This React version solves that by moving the portal into its own app that can be deployed independently, including on Vercel.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Current State
+
+Implemented:
+
+- React + TypeScript app scaffolded with Vite
+- Tailwind integrated through Vite
+- Sass styling layer for custom visual treatment
+- right-side collapsible sidebar on desktop
+- section navigation with active-state tracking
+- scroll-aware section highlighting using `IntersectionObserver`
+- migration from static portal content into React
+- bug log redesigned into readable issue cards
+- roadmap and summary panels rebuilt with clearer hierarchy
+
+## Data Model
+
+The portal is driven from the actual old dev portal dataset.
+
+Source of truth:
+
+- `../pendu-mobile/devportal/data.js`
+
+Generated bridge file:
+
+- `src/data/generatedPortalData.ts`
+
+Derived UI adapter:
+
+- `src/data/portalData.ts`
+
+This means the app does not rely on manually duplicating the project data in multiple places.
+
+Instead, the old data source is parsed and converted into a format the React UI can consume.
+
+## Project Structure
+
+```txt
+dev-portal/
+├─ public/
+├─ scripts/
+│  └─ generate-portal-data.mjs
+├─ src/
+│  ├─ data/
+│  │  ├─ generatedPortalData.ts
+│  │  └─ portalData.ts
+│  ├─ App.tsx
+│  ├─ app.scss
+│  ├─ index.css
+│  └─ main.tsx
+├─ CLAUDE_HANDOFF.md
+├─ package.json
+├─ vite.config.ts
+└─ README.md
