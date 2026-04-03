@@ -49,9 +49,9 @@ export const priorities: PriorityItem[] = [
   },
   {
     title: 'Start phase 2 with instrumentation, not gates',
-    status: 'planned',
+    status: 'done',
     owner: 'backend',
-    detail: 'Analytics and metering fields come first. Paywalls and feature enforcement wait for beta usage data.',
+    detail: 'PostHog + Sentry fully wired on backend and mobile. Metering fields (storageUsedBytes, tier, etc.) and feature gates are next.',
   },
 ]
 
@@ -59,7 +59,7 @@ export const dependencies: DependencyItem[] = [
   {
     id: '01',
     title: 'PostHog instrumentation',
-    note: 'Instrument message, media, group, call, registration, and AI recap events before monetisation or enforcement decisions are made.',
+    note: 'Done. Backend tracks user_registered, user_logged_in, message_sent, calls, groups, media, invite links. Mobile tracks screens, auth, notifications, deep links, feature usage. Keys in env vars / Codemagic secrets.',
   },
   {
     id: '02',

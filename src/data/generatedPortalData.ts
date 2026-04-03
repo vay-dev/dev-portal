@@ -578,6 +578,48 @@ export const FEATURES = [
     "bugs": []
   },
   {
+    "id": "f-analytics",
+    "layerId": "layer-3",
+    "name": "Analytics & Error Tracking (PostHog + Sentry)",
+    "status": "done",
+    "startedAt": "2026-04-01",
+    "completedAt": "2026-04-03",
+    "timeSpentHours": null,
+    "notes": "Backend: typed PostHog analytics service tracking user_registered, user_logged_in, message_sent, call events, group events, media uploads, invite link usage. Mobile: AnalyticsService singleton wrapping posthog_flutter — identify/reset on auth, auto screen tracking via route observer, feature flag support, typed event helpers (registration_started, notification_tapped, deep_link_opened, feature_used). Sentry wired on mobile for crash reporting. All keys moved out of source into env vars (backend .env, mobile --dart-define via Codemagic monitoring_keys group). Gradle subprojects block added to force posthog_flutter and audioplayers_android to compile with Kotlin 1.9 / JVM 1.8 to fix CI build failures.",
+    "files": [
+      "src/analytics/analytics.service.js",
+      "lib/data/services/analytics_service.dart",
+      "lib/core/utils/analytics_route_observer.dart",
+      "lib/core/constants/env.dart",
+      "lib/main.dart",
+      "android/build.gradle.kts",
+      "codemagic.yaml"
+    ],
+    "bugs": [
+      {
+        "id": "b-027",
+        "description": "posthog_flutter v4 changed setup() API — String arg + named params replaced by PostHogConfig object",
+        "status": "fixed",
+        "severity": "medium",
+        "fixedAt": "2026-04-03"
+      },
+      {
+        "id": "b-028",
+        "description": "Supabase direct DB hostname only has AAAA record — EC2 instance has no IPv6 route, connection failed with ENETUNREACH. Fixed by switching to pooler URL (aws-1-eu-north-1) with project ref in username.",
+        "status": "fixed",
+        "severity": "critical",
+        "fixedAt": "2026-04-01"
+      },
+      {
+        "id": "b-029",
+        "description": "CI build failed: posthog_flutter shipped Kotlin language version 1.6, incompatible with Kotlin plugin 2.2.20. Fixed by overriding all subproject compile targets in root build.gradle.kts.",
+        "status": "fixed",
+        "severity": "high",
+        "fixedAt": "2026-04-03"
+      }
+    ]
+  },
+  {
     "id": "f-freemium",
     "layerId": "layer-3",
     "name": "Freemium Tier Enforcement",
