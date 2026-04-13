@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   AlertCircle,
   ArrowUpRight,
@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleDot,
   Clock3,
+  Link,
   FolderCode,
   Layers3,
   LayoutDashboard,
@@ -81,6 +82,20 @@ const severityTextStyles: Record<Severity, string> = {
   low: 'text-cyan-300',
 }
 
+function getInitialPenduSection(): SectionId {
+  const rawHash = window.location.hash.replace('#', '')
+  const [section] = rawHash.split('/')
+
+  return penduNavItems.some((item) => item.id === section) ? (section as SectionId) : 'overview'
+}
+
+function getHashItemId(): string | null {
+  const rawHash = window.location.hash.replace('#', '')
+  const [, itemId] = rawHash.split('/')
+
+  return itemId || null
+}
+
 function StatusBadge({ status }: { status: Status }) {
   return (
     <span
@@ -91,9 +106,54 @@ function StatusBadge({ status }: { status: Status }) {
   )
 }
 
-function BugCard({ bug }: { bug: BugItem }) {
+function CopyLink({
+  section,
+  itemId,
+  onCopy,
+}: {
+  section: string
+  itemId: string
+  onCopy?: (itemId: string) => void
+}) {
+  const [copied, setCopied] = useState(false)
+  const copy = useCallback(() => {
+    const hash = `#${section}/${itemId}`
+    const url = `${window.location.origin}${window.location.pathname}${hash}`
+    window.history.replaceState(null, '', hash)
+    onCopy?.(itemId)
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    })
+  }, [section, itemId, onCopy])
   return (
-    <article className="card-surface grid gap-4 rounded-2xl p-4 md:grid-cols-[auto_1fr_auto] md:items-start">
+    <button
+      type="button"
+      onClick={copy}
+      title="Copy link"
+      className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-800 hover:text-cyan-400"
+    >
+      <Link size={12} />
+      <span className="font-mono text-[10px] tracking-wide">{copied ? 'copied!' : itemId}</span>
+    </button>
+  )
+}
+
+function BugCard({
+  bug,
+  isActive,
+  onCopyLink,
+}: {
+  bug: BugItem
+  isActive: boolean
+  onCopyLink: (itemId: string) => void
+}) {
+  return (
+    <article
+      id={bug.id}
+      className="group card-surface grid gap-4 rounded-2xl border border-transparent p-4 transition-[border-color,box-shadow] duration-300 md:grid-cols-[auto_1fr_auto] md:items-start"
+      style={isActive ? { borderColor: '#22D3EE', boxShadow: '0 0 0 1px rgba(34, 211, 238, 0.18)' } : undefined}
+    >
       <div className="flex items-center gap-3 md:pt-1">
         <span className={`h-2.5 w-2.5 rounded-full ${severityStyles[bug.severity]}`} />
         <span className={`font-mono text-[11px] uppercase tracking-[0.2em] ${severityTextStyles[bug.severity]}`}>
@@ -113,18 +173,33 @@ function BugCard({ bug }: { bug: BugItem }) {
         </div>
       </div>
 
-      <div className="justify-self-start md:justify-self-end">
+      <div className="flex flex-col items-end gap-2 justify-self-start md:justify-self-end">
         <span className="inline-flex rounded-md bg-emerald-950 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-400 ring-1 ring-emerald-800/70">
           {bug.status}
         </span>
+        <CopyLink section="bugs" itemId={bug.id} onCopy={onCopyLink} />
       </div>
     </article>
   )
 }
 
-function RoadmapCard({ phase }: { phase: RoadmapPhase }) {
+function RoadmapCard({
+  phase,
+  activeItemId,
+  onCopyLink,
+}: {
+  phase: RoadmapPhase
+  activeItemId: string | null
+  onCopyLink: (itemId: string) => void
+}) {
+  const phaseActive = activeItemId === phase.id
+
   return (
-    <article className="card-surface rounded-2xl p-5">
+    <article
+      id={phase.id}
+      className="group card-surface rounded-2xl border border-transparent p-5 transition-[border-color,box-shadow] duration-300"
+      style={phaseActive ? { borderColor: phase.accent, boxShadow: `0 0 0 1px ${phase.accent}33` } : undefined}
+    >
       <div className="grid gap-4 md:grid-cols-[4px_1fr]">
         <div className="rounded-full" style={{ backgroundColor: phase.accent }} />
         <div>
@@ -133,6 +208,7 @@ function RoadmapCard({ phase }: { phase: RoadmapPhase }) {
               <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-lg font-semibold text-slate-100">{phase.name}</h3>
                 <StatusBadge status={phase.status} />
+                <CopyLink section="roadmap" itemId={phase.id} onCopy={onCopyLink} />
               </div>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">{phase.summary}</p>
             </div>
@@ -148,7 +224,16 @@ function RoadmapCard({ phase }: { phase: RoadmapPhase }) {
 
           <div className="mt-5 grid gap-3 xl:grid-cols-2">
             {phase.features.slice(0, 4).map((feature) => (
-              <div key={feature.id} className="rounded-xl border border-slate-800 bg-slate-950/55 p-4">
+              <div
+                id={feature.id}
+                key={feature.id}
+                className="group rounded-xl border border-transparent bg-slate-950/55 p-4 transition-[border-color,box-shadow] duration-300"
+                style={
+                  activeItemId === feature.id
+                    ? { borderColor: phase.accent, boxShadow: `0 0 0 1px ${phase.accent}33` }
+                    : undefined
+                }
+              >
                 <div className="flex flex-wrap items-center gap-3">
                   <StatusBadge
                     status={
@@ -156,6 +241,7 @@ function RoadmapCard({ phase }: { phase: RoadmapPhase }) {
                     }
                   />
                   <h4 className="text-sm font-semibold text-slate-100">{feature.name}</h4>
+                  <CopyLink section="roadmap" itemId={feature.id} onCopy={onCopyLink} />
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-400">{feature.notes}</p>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
@@ -258,10 +344,12 @@ function LogicCard({ entry }: { entry: LogicEntry }) {
 
 function App() {
   const [activeProject, setActiveProject] = useState<ProjectId>('pendu')
-  const [activeSection, setActiveSection] = useState<SectionId>('overview')
+  const [activeSection, setActiveSection] = useState<SectionId>(getInitialPenduSection)
+  const [activeHashItemId, setActiveHashItemId] = useState<string | null>(getHashItemId)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const switcherRef = useRef<HTMLDivElement>(null)
   const switcherDrag = useRef({ active: false, startX: 0, scrollLeft: 0 })
+  const restoringHashRef = useRef(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const isBP = activeProject === 'bistropulse'
@@ -274,8 +362,18 @@ function App() {
   const openBugCount = bugs.length - fixedBugCount
 
   useEffect(() => {
+    const syncHashItem = () => setActiveHashItemId(getHashItemId())
+
+    window.addEventListener('hashchange', syncHashItem)
+
+    return () => {
+      window.removeEventListener('hashchange', syncHashItem)
+    }
+  }, [])
+
+  useEffect(() => {
     if (isBP) return
-    const sectionIds = navItems.map((item) => item.id)
+    const sectionIds = penduNavItems.map((item) => item.id)
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((element): element is HTMLElement => Boolean(element))
@@ -286,6 +384,10 @@ function App() {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        if (restoringHashRef.current) {
+          return
+        }
+
         const visibleEntries = entries
           .filter((entry) => entry.isIntersecting)
           .sort((left, right) => right.intersectionRatio - left.intersectionRatio)
@@ -298,7 +400,6 @@ function App() {
 
         const nextSection = topEntry.target.id as SectionId
         setActiveSection(nextSection)
-        window.history.replaceState(null, '', `#${nextSection}`)
       },
       {
         rootMargin: '-18% 0px -52% 0px',
@@ -308,12 +409,24 @@ function App() {
 
     sections.forEach((section) => observer.observe(section))
 
-    const hash = window.location.hash.replace('#', '') as SectionId
-    if (sectionIds.includes(hash)) {
-      const element = document.getElementById(hash)
+    const rawHash = window.location.hash.replace('#', '')
+    const [section, itemId] = rawHash.split('/')
+    if (sectionIds.includes(section as SectionId)) {
+      const element = document.getElementById(section)
       if (element) {
+        restoringHashRef.current = true
         requestAnimationFrame(() => {
           element.scrollIntoView({ block: 'start' })
+
+          if (itemId) {
+            setTimeout(() => {
+              document.getElementById(itemId)?.scrollIntoView({ block: 'center' })
+            }, 140)
+          }
+
+          setTimeout(() => {
+            restoringHashRef.current = false
+          }, 700)
         })
       }
     }
@@ -326,6 +439,7 @@ function App() {
 
   const handleNavigate = (sectionId: SectionId) => {
     setActiveSection(sectionId)
+    setActiveHashItemId(null)
     setMobileSidebarOpen(false)
     if (!isBP) {
       window.history.replaceState(null, '', `#${sectionId}`)
@@ -336,6 +450,7 @@ function App() {
   const switchProject = (pid: ProjectId) => {
     setActiveProject(pid)
     setActiveSection('overview')
+    setActiveHashItemId(null)
     window.history.replaceState(null, '', '#overview')
   }
 
@@ -439,11 +554,11 @@ function App() {
                       {BP_LAYERS.length} layers · {BP_FEATURES.length} features
                     </div>
                   </div>
-                  <div className="grid gap-4">
-                    {bpData.roadmap.map((phase) => (
-                      <RoadmapCard key={phase.id} phase={phase} />
-                    ))}
-                  </div>
+            <div className="grid gap-4">
+              {bpData.roadmap.map((phase) => (
+                      <RoadmapCard key={phase.id} phase={phase} activeItemId={activeHashItemId} onCopyLink={setActiveHashItemId} />
+              ))}
+            </div>
                 </section>
               )}
 
@@ -475,7 +590,7 @@ function App() {
                   </div>
                   <div className="grid gap-3">
                     {bpData.bugs.map((bug) => (
-                      <BugCard key={bug.id} bug={bug} />
+                      <BugCard key={bug.id} bug={bug} isActive={activeHashItemId === bug.id} onCopyLink={setActiveHashItemId} />
                     ))}
                   </div>
                 </section>
@@ -591,7 +706,7 @@ function App() {
 
             <div className="grid gap-4">
               {roadmap.map((phase) => (
-                <RoadmapCard key={phase.id} phase={phase} />
+                <RoadmapCard key={phase.id} phase={phase} activeItemId={activeHashItemId} onCopyLink={setActiveHashItemId} />
               ))}
             </div>
           </section>
@@ -620,7 +735,7 @@ function App() {
 
             <div className="grid gap-3">
               {bugs.map((bug) => (
-                <BugCard key={bug.id} bug={bug} />
+                <BugCard key={bug.id} bug={bug} isActive={activeHashItemId === bug.id} onCopyLink={setActiveHashItemId} />
               ))}
             </div>
           </section>
@@ -674,7 +789,16 @@ function App() {
 
                 <div className="grid gap-4">
                   {dependencies.map((item, index) => (
-                    <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                    <div
+                      key={item.id}
+                      id={`dep-${item.id}`}
+                      className="group rounded-xl border border-transparent bg-slate-950/50 p-4 transition-[border-color,box-shadow] duration-300"
+                      style={
+                        activeHashItemId === `dep-${item.id}`
+                          ? { borderColor: '#22D3EE', boxShadow: '0 0 0 1px rgba(34, 211, 238, 0.18)' }
+                          : undefined
+                      }
+                    >
                       <div className="flex items-start gap-3">
                         <span className="font-mono text-sm font-semibold text-cyan-400">{item.id}.</span>
                         <div className="min-w-0 flex-1">
@@ -683,6 +807,7 @@ function App() {
                             {index === 0 ? <CheckCircle2 size={14} className="text-emerald-400" /> : null}
                             {index === 1 ? <Clock3 size={14} className="text-amber-400" /> : null}
                             {index >= 2 ? <CircleDot size={14} className="text-slate-500" /> : null}
+                            <CopyLink section="plan" itemId={`dep-${item.id}`} onCopy={setActiveHashItemId} />
                           </div>
                           <p className="mt-2 text-sm leading-6 text-slate-400">{item.note}</p>
                         </div>

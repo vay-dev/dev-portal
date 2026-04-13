@@ -37,15 +37,15 @@ export interface DependencyItem {
 export const priorities: PriorityItem[] = [
   {
     title: 'Move dev portal into React and host it on Vercel',
-    status: 'in-progress',
+    status: 'done',
     owner: 'frontend',
-    detail: 'The static portal is being replaced with a shareable React app so progress can be reviewed from a live link.',
+    detail: 'Deployed as a multi-project React app (Pendu + Bistropulse) on Vercel. Shareable live link.',
   },
   {
     title: 'Make bug logs operationally readable',
-    status: 'in-progress',
+    status: 'done',
     owner: 'frontend',
-    detail: 'Severity, source feature, fix state, and explanation need to be visible without expanding deep nested rows.',
+    detail: 'Bug cards show severity, source feature, fix state, and full explanation without expanding nested rows.',
   },
   {
     title: 'Start phase 2 with instrumentation, not gates',
